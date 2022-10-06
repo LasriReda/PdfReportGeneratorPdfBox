@@ -1,0 +1,13 @@
+INBOX: absolute/path/to/INBOX
+OUTBOX: absolute/path/to/OUTBOX
+spring:
+    jackson:
+       serialization:
+            write-dates-as-timestamps: false
+    main:
+        allow-bean-definition-overriding: true
+
+server:
+    port: 8081
+    servlet:
+      context-path: /pdfbox/API
