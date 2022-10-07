@@ -180,64 +180,11 @@ public class PDFGenerator {
 	        	colsWidth[i] = (tableWidth / 100) * content[0][i].getCellWidth();
 	        }
 	    }
-	    
-		//draw the rows
+	    // init rows height
 		float rowsH[] = new float[rows];
 		Arrays.fill(rowsH, rowHeight);
-		for(int i = 0; i < content.length; i++){
-			for(int j = 0 ; j < content[i].length; j++){
-		        String text;
-	            if(content[i][j] != null){
-	            	text = content[i][j].getText();
-	            }else{
-	            	continue;
-	            }
-		        float textwidth = (pdfDocument.getFont(pdfContent.getFontType()).getStringWidth(text) / 1000.0f) * pdfContent.getPoliceSize();
-		        float cellWidth = colsWidth[j] - (2 * cellMargin);
-		        int lineNb = 0;
-		        if(textwidth > cellWidth){
-		        	String []textWords = text.split(" ");
-		        	String textLine = "";
-		        	int textWidthTarget = (int)(cellWidth / charWidth);
-	            	for(String word : textWords){
-	            		if(!textLine.isEmpty() && (textLine.length() + word.length() + 1) <= textWidthTarget){
-	            			textLine += " " + word;
-	            		}else{
-	            			textLine = word;
-	            			lineNb++;
-	            		}
-	            	}
-		        }
-		        if(rowsH[i] < (rowHeight * lineNb)){
-		        	rowsH[i] = rowHeight * lineNb;
-		        }
-        	}
-        }
-	    float nexty = y ;
-        contentStream.moveTo(margin,nexty);
-        contentStream.lineTo(margin+tableWidth,nexty);
-        contentStream.stroke();
-	    for (int i = 0; i < rows; i++) {
-	        nexty-= rowsH[i];
-	        tableHeight += rowsH[i];
-	        contentStream.moveTo(margin,nexty);
-	        contentStream.lineTo(margin+tableWidth,nexty);
-	        contentStream.stroke();
-	    }
 	    
-	    // draw columns
-	    float nextx = margin;
-    	contentStream.moveTo(nextx,y);
-        contentStream.lineTo(nextx,y-tableHeight);
-        contentStream.stroke();
-	    for (int i = 0; i < cols; i++) {
-	        nextx += colsWidth[i];
-	    	contentStream.moveTo(nextx,y);
-	        contentStream.lineTo(nextx,y-tableHeight);
-	        contentStream.stroke();
-	    }
-	    
-	    //now add the text
+	    // add the text & check lines per cell
 	    float textx = margin+cellMargin;
 	    float texty = y-15;
 	    for(int i = 0; i < content.length; i++){
@@ -250,22 +197,35 @@ public class PDFGenerator {
 	            }
 	            float text_width = (pdfDocument.getFont(pdfContent.getFontType()).getStringWidth(text) / 1000.0f) * pdfContent.getPoliceSize();
 	            float cellWidth = colsWidth[j] - (2 * cellMargin);
+	            int lineNb = 1;
 	            int textWidthTarget = (int)(cellWidth / charWidth);
 	            List<String> textLines = new ArrayList<>();
 	            if(text_width > cellWidth){
 	            	String []textWords = text.split(" ");
+		            StringBuffer textLine = new StringBuffer();
 	            	for(String word : textWords){
-	            		if(!textLines.isEmpty() && (textLines.get(textLines.size() - 1).length() + word.length() + 1) <= textWidthTarget){
-	            			String lineTxt = textLines.get(textLines.size() - 1) + " " + word;
-	            			textLines.remove(textLines.size() - 1);
-	            			textLines.add(lineTxt);
+	            		if((textLine.toString().trim().length() + word.length() + 1) <= textWidthTarget){
+	            			textLine.append( " " + word);
 	            		}else{
-	            			textLines.add(word);
+	            			if(textLine.length() > 0) {
+	        	            	textLines.add(textLine.toString().trim());
+	            			}
+	            			textLine = new StringBuffer(word);
+	            			lineNb++;
+	            		}
+	            		if(word.equals( textWords[textWords.length - 1])) {
+	            			textLines.add(textLine.toString().trim());
 	            		}
 	            	}
+	            	
 	            }else{
 	            	textLines.add(text);
 	            }
+	            // update rows height according to the text
+	            if(rowsH[i] < (rowHeight * lineNb)){
+		        	rowsH[i] = rowHeight * lineNb;
+		        }
+	            
 	            float initTextY = texty;
 	            for(String txtLine : textLines){
 	            	text_width = (pdfDocument.getFont(pdfContent.getFontType()).getStringWidth(txtLine) / 1000.0f) * pdfContent.getPoliceSize();
@@ -297,6 +257,33 @@ public class PDFGenerator {
 	        texty -= rowsH[i];
 	        textx = margin+cellMargin;
 	    }
+	    
+
+	    //draw the rows
+	    float nexty = y ;
+        contentStream.moveTo(margin,nexty);
+        contentStream.lineTo(margin+tableWidth,nexty);
+        contentStream.stroke();
+	    for (int i = 0; i < rows; i++) {
+	        nexty-= rowsH[i];
+	        tableHeight += rowsH[i];
+	        contentStream.moveTo(margin,nexty);
+	        contentStream.lineTo(margin+tableWidth,nexty);
+	        contentStream.stroke();
+	    }
+	    
+	    // draw columns
+	    float nextx = margin;
+    	contentStream.moveTo(nextx,y);
+        contentStream.lineTo(nextx,y-tableHeight);
+        contentStream.stroke();
+	    for (int i = 0; i < cols; i++) {
+	        nextx += colsWidth[i];
+	    	contentStream.moveTo(nextx,y);
+	        contentStream.lineTo(nextx,y-tableHeight);
+	        contentStream.stroke();
+	    }
+	    
 	    pdfDocument.setY(texty);
 	    contentStream.close();
 	}
